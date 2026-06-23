@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # 1. Definimos la Memoria (El Estado del Grafo)
-# Modificá la clase EstadoEntrevista para que quede así:
 class EstadoEntrevista(TypedDict):
     mensajes: Annotated[list, add_messages] 
     nivel_dificultad: str
