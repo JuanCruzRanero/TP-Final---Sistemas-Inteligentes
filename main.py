@@ -4,6 +4,14 @@ from pydantic import BaseModel
 from langchain_core.messages import HumanMessage, AIMessage
 from agente import simulador 
 
+# --- NUEVAS LIBRERÍAS PARA EL AUDIO ---
+# Arriba de todo, cambiá la importación de gTTS por estas:
+import io
+import base64
+import asyncio
+import edge_tts
+# --------------------------------------
+
 app = FastAPI(title="Simulador de Entrevistas Técnicas")
 
 app.add_middleware(
@@ -14,14 +22,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Agregamos el historial al paquete de datos que esperamos recibir
 class MensajeUsuario(BaseModel):
     mensaje: str
     dificultad: str = "Trainee"
-    historial: list = [] # <--- Magia nueva
+    historial: list = [] 
 
 @app.post("/entrevista")
 def charlar_con_agente(datos: MensajeUsuario):
+    # 1. Traducimos el historial
     mensajes_langchain = []
     for msg in datos.historial:
         if msg["rol"] == "usuario":
@@ -31,26 +39,35 @@ def charlar_con_agente(datos: MensajeUsuario):
             
     mensajes_langchain.append(HumanMessage(content=datos.mensaje))
 
-    # ---- ACÁ ESTÁ LA MAGIA ----
-    # Contamos la cantidad de intercambios (cada par usuario-bot cuenta como 1 turno)
-    # Por ejemplo: si el historial tiene 4 mensajes (2 tuyos, 2 del bot), y ahora mandás el 3ero tuyo, 
-    # la longitud total de 'mensajes_langchain' sería 5.
+    # 2. Lógica del semáforo para cortar la charla
     cantidad_turnos_totales = len(mensajes_langchain)
-    
-    # Si consideramos que la charla se tiene que cortar al 3er o 5to mensaje en total, lo definimos acá:
     llegamos_al_limite = cantidad_turnos_totales >= 5 
-    # ---------------------------
 
     estado_entrada = {
         "mensajes": mensajes_langchain,
         "nivel_dificultad": datos.dificultad,
-        "es_ultimo_turno": llegamos_al_limite # Le pasamos el semáforo al agente
+        "es_ultimo_turno": llegamos_al_limite 
     }
     
+    # 3. Invocamos al cerebro de Groq
     resultado = simulador.invoke(estado_entrada)
     respuesta_bot = resultado["mensajes"][-1].content
     
+    async def generar_audio_masculino(texto):
+        comunicador = edge_tts.Communicate(texto, "es-AR-TomasNeural", rate="+40%")
+        audio_data = b""
+        async for chunk in comunicador.stream():
+            if chunk["type"] == "audio":
+                audio_data += chunk["data"]
+        return audio_data
+
+    # Ejecutamos la magia y lo convertimos a Base64
+    audio_bytes = asyncio.run(generar_audio_masculino(respuesta_bot))
+    audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+    # -----------------------------
+
     return {
         "dificultad_evaluada": datos.dificultad,
-        "respuesta": respuesta_bot
+        "respuesta": respuesta_bot,
+        "audio": audio_base64
     }
