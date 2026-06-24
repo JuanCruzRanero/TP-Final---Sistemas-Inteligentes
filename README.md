@@ -17,7 +17,9 @@ git clone link_del_repo
 
 cd carpetaDelProyecto
 
-3. Configurar el Backend (Python)
+3. Crear un archivo .env y pegar la API_KEY (privada por cuestiones de seguridad)
+
+4. Configurar el Backend (Python)
 - En una terminal nueva (Terminal 1, de ahora en más), crear y activar el entorno virtual, y luego instalar las dependencias. Todo esto debe hacerse con los siguientes comandos:
 
 python -m venv entorno_tp
@@ -28,7 +30,7 @@ python -m venv entorno_tp
 
 pip install fastapi uvicorn groq edge-tts python-dotenv pydantic langchain-core langchain-groq langgraph
 
-4. Configurar el Frontend (React + Vite)
+5. Configurar el Frontend (React + Vite)
 - En una nueva terminal (Terminal 2, de acá en más), instalar las dependencias visuales de la interfaz de React con los siguientes comandos:
 
 cd frontend-simulador
@@ -37,7 +39,7 @@ npm install
 
 npm install axios
 
-5. Levantar los Servicios en Simultáneo
+6. Levantar los Servicios en Simultáneo
 - Para iniciar el simulador, se necesitan las dos terminales corriendo al mismo tiempo.
 
 Terminal 1 (Backend) -> (entorno_tp)> uvicorn main:app --reload
@@ -48,16 +50,9 @@ Terminal 2 (Frontend) -> npm run dev
 
 Vite iniciará la web. Presionar Ctrl + Clic sobre el enlace local que aparece en consola (normalmente http://localhost:5173).
 
-6. Apagar los servicios para su finalización
+7. Apagar los servicios para su finalización
 
 Para liberar los puertos correctamente al finalizar:
 
 - Terminal 2 (Frontend): Ctrl + C. Si pregunta "¿Desea terminar el trabajo en lote?", presionar S y Enter.
 - Terminal 1 (Backend): Ctrl + C para detener el servicio y tomar el control de la consola. Para apagar el entorno virtual, ejecutar: (entorno_tp)> deactivate
-
-
-
-
-
-
-
