@@ -4,13 +4,10 @@ from pydantic import BaseModel
 from langchain_core.messages import HumanMessage, AIMessage
 from agente import simulador 
 
-# --- NUEVAS LIBRERÍAS PARA EL AUDIO ---
-# Arriba de todo, cambiá la importación de gTTS por estas:
 import io
 import base64
 import asyncio
 import edge_tts
-# --------------------------------------
 
 app = FastAPI(title="Simulador de Entrevistas Técnicas")
 
@@ -25,6 +22,7 @@ app.add_middleware(
 class MensajeUsuario(BaseModel):
     mensaje: str
     dificultad: str = "Trainee"
+    area: str  # <--- Recibimos el área desde React
     historial: list = [] 
 
 @app.post("/entrevista")
@@ -46,6 +44,7 @@ def charlar_con_agente(datos: MensajeUsuario):
     estado_entrada = {
         "mensajes": mensajes_langchain,
         "nivel_dificultad": datos.dificultad,
+        "area": datos.area, # <--- SE LO PASAMOS AL GRAFO ACÁ
         "es_ultimo_turno": llegamos_al_limite 
     }
     
@@ -64,7 +63,6 @@ def charlar_con_agente(datos: MensajeUsuario):
     # Ejecutamos la magia y lo convertimos a Base64
     audio_bytes = asyncio.run(generar_audio_masculino(respuesta_bot))
     audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
-    # -----------------------------
 
     return {
         "dificultad_evaluada": datos.dificultad,

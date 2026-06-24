@@ -9,26 +9,30 @@ function App() {
   const [cargando, setCargando] = useState(false);
   const [dificultad, setDificultad] = useState('Trainee');
   
-  // NUEVO: Estado para bloquear todo al terminar
+  // NUEVOS ESTADOS: Para controlar el área y el flujo de pantallas
+  const [area, setArea] = useState('Redes');
+  const [entrevistaIniciada, setEntrevistaIniciada] = useState(false);
   const [entrevistaTerminada, setEntrevistaTerminada] = useState(false);
 
   // Referencias para el DOM y la multimedia
   const videoRef = useRef(null);
   const finalDelChatRef = useRef(null);
-  const audioRef = useRef(null); // NUEVO: Guardamos el audio para poder cortarlo
+  const audioRef = useRef(null);
 
   // Manejador del Enter
   const manejarTecla = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault(); 
-      enviarMensaje(e); // Le pasamos el evento
+      enviarMensaje(e);
     }
   };
 
   // Autoscroll
   useEffect(() => {
-    finalDelChatRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [historial]);
+    if (entrevistaIniciada) {
+      finalDelChatRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [historial, entrevistaIniciada]);
 
   // Función para callar al Míster a la fuerza
   const saltearRespuesta = () => {
@@ -42,11 +46,19 @@ function App() {
     }
   };
 
+  // NUEVA FUNCIÓN: Para resetear todo y volver a elegir área
+  const reiniciarEntrevista = () => {
+    saltearRespuesta();
+    setHistorial([]);
+    setMensaje('');
+    setEntrevistaTerminada(false);
+    setEntrevistaIniciada(false);
+  };
+
   const enviarMensaje = async (e) => {
-    if (e) e.preventDefault(); // Por si viene del formulario
+    if (e) e.preventDefault();
     if (!mensaje.trim()) return;
 
-    // Si había un audio reproduciéndose, lo cortamos antes de mandar el nuevo mensaje
     saltearRespuesta();
 
     const nuevoHistorial = [...historial, { rol: 'usuario', texto: mensaje }];
@@ -58,21 +70,19 @@ function App() {
       const respuesta = await axios.post('http://localhost:8000/entrevista', {
         mensaje: mensaje,
         dificultad: dificultad,
+        area: area, // LE MANDAMOS EL ÁREA AL BACKEND
         historial: historial 
       });
 
       const textoBot = respuesta.data.respuesta;
       setHistorial([...nuevoHistorial, { rol: 'bot', texto: textoBot }]);
 
-      // Revisamos si el bot tiró la nota final (buscando un "/10")
       if (textoBot.includes('/10') || textoBot.toLowerCase().includes('nota final')) {
         setEntrevistaTerminada(true);
       }
 
       if (respuesta.data.audio) {
         const sonidoMagico = `data:audio/mp3;base64,${respuesta.data.audio}`;
-        
-        // Guardamos el audio en la referencia en vez de una variable suelta
         audioRef.current = new Audio(sonidoMagico);
         
         audioRef.current.onplay = () => {
@@ -103,116 +113,168 @@ function App() {
     <div className="contenedor-chat">
       <h1>Simulador de Entrevistas</h1>
 
-      {/* --- SELECTOR DE DIFICULTAD --- */}
-      <div style={{ marginBottom: '15px', textAlign: 'center' }}>
-        <label style={{ color: 'white', marginRight: '10px' }}>Nivel del candidato:</label>
-        <select 
-          value={dificultad} 
-          onChange={(e) => setDificultad(e.target.value)}
-          disabled={historial.length > 0} // SE BLOQUEA CON EL PRIMER MENSAJE
-          style={{ padding: '5px', borderRadius: '5px', backgroundColor: '#333', color: 'white', border: '1px solid #555' }}
-        >
-          <option value="Trainee">Trainee</option>
-          <option value="Junior">Junior</option>
-          <option value="Semi-Senior">Semi-Senior</option>
-          <option value="Senior">Senior</option>
-        </select>
-      </div>
-
-      {/* --- AVATAR DEL MÍSTER --- */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-        <div style={{
-            width: '200px', 
-            height: '200px', 
-            borderRadius: '50%', 
-            border: '4px solid #00f0ff', 
-            boxShadow: '0 0 15px rgba(0, 240, 255, 0.5)',
-            overflow: 'hidden', 
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center'
+      {/* PANTALLA 1: CONFIGURACIÓN INICIAL (Si la entrevista NO inició) */}
+      {!entrevistaIniciada ? (
+        <div style={{ 
+          backgroundColor: '#222', 
+          padding: '30px', 
+          borderRadius: '12px', 
+          textAlign: 'center', 
+          border: '1px solid #444',
+          marginTop: '20px'
         }}>
-          <video 
-            ref={videoRef}
-            src="/video_indio.mp4" 
-            loop 
-            muted 
-            style={{
-              width: '100%', 
-              height: '100%', 
-              objectFit: 'cover', 
-              transform: 'scale(1.5)' 
-            }}
-          />
-        </div>
-      </div>
-
-      {/* --- CAJA DE HISTORIAL --- */}
-      <div className="caja-mensajes">
-        {historial.length === 0 && (
-          <div className="mensaje bot">
-            <p>¡Hola! Soy tu entrevistador técnico. ¿Empezamos?</p>
-          </div>
-        )}
-        
-        <div className="contenedor-mensajes">
-          {historial.map((msg, index) => (
-            <div key={index} className={`mensaje ${msg.rol}`}>
-              <p>{msg.texto}</p>
-            </div>
-          ))}
-          <div ref={finalDelChatRef} /> 
-        </div>
-        
-        {cargando && (
-          <div className="mensaje bot pensando">
-            <p>Analizando respuesta...</p>
-          </div>
-        )}
-      </div>
-
-      {/* --- FORMULARIO Y CAJA DE TEXTO --- */}
-      <form onSubmit={enviarMensaje} className="formulario" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <textarea
-          value={mensaje}
-          onChange={(e) => setMensaje(e.target.value)}
-          onKeyDown={manejarTecla} 
-          disabled={entrevistaTerminada || cargando} // Se bloquea si termina o si está pensando
-          placeholder={entrevistaTerminada ? "Entrevista finalizada." : "Escribí tu respuesta acá..."}
-          rows={3} 
-          style={{
-            width: '100%',
-            minHeight: '60px',
-            maxHeight: '140px', 
-            resize: 'none', 
-            overflowY: 'auto', 
-            padding: '10px',
-            borderRadius: '8px',
-            fontFamily: 'inherit',
-            fontSize: '16px',
-          }}
-        />
-        
-        {/* BOTONERA */}
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-          <button 
-            type="button" 
-            onClick={saltearRespuesta} 
-            disabled={cargando}
-            style={{ backgroundColor: '#ff4444', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer' }}
-          >
-            Cortar Audio
-          </button>
+          <h2 style={{ color: '#00f0ff', marginBottom: '20px' }}>Prepará tu examen</h2>
           
+          {/* Selector de Nivel */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ color: 'white', marginRight: '10px', display: 'block', marginBottom: '8px' }}>Nivel del Candidato:</label>
+            <select 
+              value={dificultad} 
+              onChange={(e) => setDificultad(e.target.value)}
+              style={{ padding: '10px', width: '200px', borderRadius: '5px', backgroundColor: '#333', color: 'white', border: '1px solid #555' }}
+            >
+              <option value="Trainee">Trainee</option>
+              <option value="Junior">Junior</option>
+              <option value="Semi-Senior">Semi-Senior</option>
+              <option value="Senior">Senior</option>
+            </select>
+          </div>
+
+          {/* Selector de Área */}
+          <div style={{ marginBottom: '30px' }}>
+            <label style={{ color: 'white', marginRight: '10px', display: 'block', marginBottom: '8px' }}>Área Tecnológica:</label>
+            <select 
+              value={area} 
+              onChange={(e) => setArea(e.target.value)}
+              style={{ padding: '10px', width: '200px', borderRadius: '5px', backgroundColor: '#333', color: 'white', border: '1px solid #555' }}
+            >
+              <option value="Redes">Redes Informáticas</option>
+              <option value="Base de Datos">Base de Datos</option>
+              <option value="Programacion">Programación</option>
+            </select>
+          </div>
+
           <button 
-            type="submit" 
-            disabled={cargando || entrevistaTerminada}
-            style={{ backgroundColor: '#00f0ff', color: 'black', fontWeight: 'bold', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer' }}
+            onClick={() => setEntrevistaIniciada(true)}
+            style={{ backgroundColor: '#00f0ff', color: 'black', fontWeight: 'bold', border: 'none', padding: '12px 30px', borderRadius: '5px', cursor: 'pointer', fontSize: '16px' }}
           >
-            Enviar
+            Comenzar Entrevista
           </button>
         </div>
-      </form>
+      ) : (
+        
+        /* PANTALLA 2: EL SIMULADOR DE CHAT (Si la entrevista YA inició) */
+        <>
+          <div style={{ textAlign: 'center', marginBottom: '15px', color: '#aaa' }}>
+            <p>Evaluación de <strong>{area}</strong> - Nivel <strong>{dificultad}</strong></p>
+          </div>
+
+          {/* AVATAR DEL MÍSTER */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+            <div style={{
+                width: '200px', 
+                height: '200px', 
+                borderRadius: '50%', 
+                border: '4px solid #00f0ff', 
+                boxShadow: '0 0 15px rgba(0, 240, 255, 0.5)',
+                overflow: 'hidden', 
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center'
+            }}>
+              <video 
+                ref={videoRef}
+                src="/video_indio.mp4" 
+                loop 
+                muted 
+                style={{
+                  width: '100%', 
+                  height: '100%', 
+                  objectFit: 'cover', 
+                  transform: 'scale(1.5)' 
+                }}
+              />
+            </div>
+          </div>
+
+          {/* CAJA DE HISTORIAL */}
+          <div className="caja-mensajes">
+            {historial.length === 0 && (
+              <div className="mensaje bot">
+                <p>¡Hola! Soy tu entrevistador técnico para el área de {area}. ¿Estás listo para arrancar?</p>
+              </div>
+            )}
+            
+            <div className="contenedor-mensajes">
+              {historial.map((msg, index) => (
+                <div key={index} className={`mensaje ${msg.rol}`}>
+                  <p>{msg.texto}</p>
+                </div>
+              ))}
+              <div ref={finalDelChatRef} /> 
+            </div>
+            
+            {cargando && (
+              <div className="mensaje bot pensando">
+                <p>Analizando respuesta...</p>
+              </div>
+            )}
+          </div>
+
+          {/* FORMULARIO Y BOTONERA */}
+          <form onSubmit={enviarMensaje} className="formulario" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <textarea
+              value={mensaje}
+              onChange={(e) => setMensaje(e.target.value)}
+              onKeyDown={manejarTecla} 
+              disabled={entrevistaTerminada || cargando} 
+              placeholder={entrevistaTerminada ? "Entrevista finalizada." : "Escribí tu respuesta acá..."}
+              rows={3} 
+              style={{
+                width: '100%',
+                minHeight: '60px',
+                maxHeight: '120px', 
+                resize: 'none', 
+                overflowY: 'auto', 
+                padding: '10px',
+                borderRadius: '8px',
+                fontFamily: 'inherit'
+              }}
+            />
+            
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between' }}>
+              
+              {/* Si terminó, mostramos el botón de volver al menú. Si no, mostramos el de cortar audio */}
+              {entrevistaTerminada ? (
+                <button 
+                  type="button" 
+                  onClick={reiniciarEntrevista}
+                  style={{ backgroundColor: '#28a745', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                  Nueva Entrevista (Volver al Inicio)
+                </button>
+              ) : (
+                <button 
+                  type="button" 
+                  onClick={saltearRespuesta} 
+                  disabled={cargando}
+                  style={{ backgroundColor: '#ff4444', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer' }}
+                >
+                  Cortar Audio
+                </button>
+              )}
+              
+              <button 
+                type="submit" 
+                disabled={cargando || entrevistaTerminada}
+                style={{ backgroundColor: '#00f0ff', color: 'black', fontWeight: 'bold', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer' }}
+              >
+                Enviar
+              </button>
+            </div>
+          </form>
+        </>
+      )}
     </div>
   );
 }

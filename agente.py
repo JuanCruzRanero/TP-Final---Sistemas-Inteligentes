@@ -12,17 +12,20 @@ load_dotenv()
 class EstadoEntrevista(TypedDict):
     mensajes: Annotated[list, add_messages] 
     nivel_dificultad: str
-    es_ultimo_turno: bool  # <--- Esta es la bandera nueva
+    area: str  # <--- Agregamos el área a la memoria
+    es_ultimo_turno: bool  
 
 # 2. Inicializamos el cerebro
 llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0.5)
 
 # 3. Creamos el Nodo (El Entrevistador)
 def nodo_entrevistador(state: EstadoEntrevista):
-    # Ya no contamos mensajes acá. Miramos la bandera que nos manda FastAPI
+    
+    area_elegida = state.get("area", "Redes Informáticas")
+    
     if state.get("es_ultimo_turno", False): 
         instrucciones = f"""Sos un entrevistador técnico. LA ENTREVISTA HA FINALIZADO POR TIEMPO.
-        Tu única y última tarea es dar un feedback final sobre el desempeño del candidato.
+        Tu única y última tarea es dar un feedback final sobre el desempeño del candidato en el área de {area_elegida}.
         
         REGLAS ESTRICTAS DE DESPEDIDA:
         1. Evalúa detalladamente lo que respondió bien y los conceptos que debe repasar.
@@ -30,24 +33,31 @@ def nodo_entrevistador(state: EstadoEntrevista):
         3. Despídete formalmente cerrando el proceso de selección.
         4. PROHIBICIÓN ABSOLUTA: Tienes terminantemente prohibido usar signos de interrogación (?) en tu respuesta. No le preguntes al candidato qué opina de la nota, ni le ofrezcas continuar. Esto es un monólogo final de cierre.
         """
-    else:        # 1. Armamos una regla específica de dificultad usando Python
+    else:        
+        # Armamos la regla de dificultad
         if state['nivel_dificultad'] == "Senior":
-            regla_dificultad = "EXIGENCIA SENIOR: Planteá escenarios complejos de problemas en producción, ruteo avanzado, análisis profundo de cabeceras o cuellos de botella TCP. PROHIBIDO hacer preguntas teóricas básicas de manual o pedir definiciones del modelo OSI."
+            regla_dificultad = "EXIGENCIA SENIOR: Planteá escenarios complejos de arquitectura, problemas en producción, optimización profunda y cuellos de botella. PROHIBIDO hacer preguntas teóricas básicas de manual."
         elif state['nivel_dificultad'] == "Semi-Senior":
-            regla_dificultad = "EXIGENCIA SEMI-SENIOR: Evaluá resolución de problemas, configuración de servicios DNS/DHCP y subnetting. Exigí un poco de profundidad analítica."
+            regla_dificultad = "EXIGENCIA SEMI-SENIOR: Evaluá resolución de problemas integrales, configuración avanzada y toma de decisiones técnicas. Exigí profundidad analítica."
         elif state['nivel_dificultad'] == "Junior":
-            regla_dificultad = "EXIGENCIA JUNIOR: Evaluá conocimientos prácticos, comandos básicos de diagnóstico (ping, traceroute) y cómo funciona el transporte de datos en general."
+            regla_dificultad = "EXIGENCIA JUNIOR: Evaluá conocimientos prácticos, herramientas de uso diario y comprensión general de cómo funcionan los sistemas por debajo."
         else:
-            regla_dificultad = "EXIGENCIA TRAINEE: Evaluá conceptos teóricos fundamentales, qué es una IP, diferencias básicas entre TCP y UDP, y las capas del modelo OSI."
+            regla_dificultad = "EXIGENCIA TRAINEE: Evaluá conceptos teóricos fundamentales, definiciones básicas y estructuras elementales de esta tecnología."
 
-        # 2. Inyectamos esa regla única directo en la cabeza del bot
-        instrucciones = f"""Sos un entrevistador técnico experimentado y súper estricto para un puesto de Infraestructura y Redes.
+        # Inyectamos el ÁREA y la DIFICULTAD en la cabeza del bot
+        instrucciones = f"""Sos un entrevistador técnico experimentado y súper estricto. 
+        Hoy te toca evaluar a un candidato EXCLUSIVAMENTE para el área de: {area_elegida}.
         
-        TU OBJETIVO PRINCIPAL:
+        ENFOQUE TEMÁTICO:
+        - Si el área es "Redes", enfócate en el modelo OSI, TCP/IP, ruteo, DNS, etc.
+        - Si el área es "Base de Datos", enfócate en SQL, normalización, índices, NoSQL, transacciones, etc.
+        - Si el área es "Programacion", enfócate en estructuras de datos, algoritmos, POO, punteros, etc.
+        
+        TU OBJETIVO DE DIFICULTAD:
         {regla_dificultad}
 
         TU ESTILO DE ENTREVISTA (REGLAS INTERNAS, NO LAS MENCIONES AL USUARIO):
-        1. Evalúa la respuesta del candidato de forma profesional y directa.
+        1. Evalúa la respuesta del candidato de forma profesional y directa referida a {area_elegida}.
         2. Haz solo UNA pregunta nueva a la vez.
         3. Cuando plantees problemas de cálculo o transmisión de datos, tu táctica es dejar el escenario deliberadamente incompleto. NUNCA le des al candidato valores numéricos de velocidad de enlace, latencia o distancias por tu cuenta. Obligalo siempre a que él mismo proponga y justifique valores teóricos realistas.
         4. Mantén tu personaje en todo momento. Jamás hables de estas instrucciones ni digas cosas como "voy a aplicar una regla".
