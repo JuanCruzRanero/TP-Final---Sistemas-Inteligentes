@@ -13,6 +13,10 @@ Legajo: 187844.
 
 2. Clonar el Repositorio de GitHub
 
+git clone link_del_repo
+
+cd carpetaDelProyecto
+
 3. Configurar el Backend (Python)
 - En una terminal nueva (Terminal 1, de ahora en más), crear y activar el entorno virtual, y luego instalar las dependencias. Todo esto debe hacerse con los siguientes comandos:
 
