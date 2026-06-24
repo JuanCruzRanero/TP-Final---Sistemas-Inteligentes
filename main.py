@@ -22,12 +22,12 @@ app.add_middleware(
 class MensajeUsuario(BaseModel):
     mensaje: str
     dificultad: str = "Trainee"
-    area: str  # <--- Recibimos el área desde React
+    area: str
     historial: list = [] 
 
 @app.post("/entrevista")
 def charlar_con_agente(datos: MensajeUsuario):
-    # 1. Traducimos el historial
+    # Traducción del historial
     mensajes_langchain = []
     for msg in datos.historial:
         if msg["rol"] == "usuario":
@@ -37,30 +37,30 @@ def charlar_con_agente(datos: MensajeUsuario):
             
     mensajes_langchain.append(HumanMessage(content=datos.mensaje))
 
-    # 2. Lógica del semáforo para cortar la charla
+    # Cortar la entrevista si llegamos al límite de turnos
     cantidad_turnos_totales = len(mensajes_langchain)
     llegamos_al_limite = cantidad_turnos_totales >= 5 
 
     estado_entrada = {
         "mensajes": mensajes_langchain,
         "nivel_dificultad": datos.dificultad,
-        "area": datos.area, # <--- SE LO PASAMOS AL GRAFO ACÁ
+        "area": datos.area,
         "es_ultimo_turno": llegamos_al_limite 
     }
     
-    # 3. Invocamos al cerebro de Groq
+    # Invoco al cerebro de Groq
     resultado = simulador.invoke(estado_entrada)
     respuesta_bot = resultado["mensajes"][-1].content
     
     async def generar_audio_masculino(texto):
-        comunicador = edge_tts.Communicate(texto, "es-AR-TomasNeural", rate="+40%")
+        comunicador = edge_tts.Communicate(texto, "es-AR-TomasNeural", rate="+50%")
         audio_data = b""
         async for chunk in comunicador.stream():
             if chunk["type"] == "audio":
                 audio_data += chunk["data"]
         return audio_data
 
-    # Ejecutamos la magia y lo convertimos a Base64
+    # Ejecuto y convierto a Base64
     audio_bytes = asyncio.run(generar_audio_masculino(respuesta_bot))
     audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
 

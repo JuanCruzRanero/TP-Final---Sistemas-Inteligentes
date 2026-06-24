@@ -9,7 +9,7 @@ function App() {
   const [cargando, setCargando] = useState(false);
   const [dificultad, setDificultad] = useState('Trainee');
   
-  // NUEVOS ESTADOS: Para controlar el área y el flujo de pantallas
+  // Estados para controlar el área y el flujo de pantallas
   const [area, setArea] = useState('Redes');
   const [entrevistaIniciada, setEntrevistaIniciada] = useState(false);
   const [entrevistaTerminada, setEntrevistaTerminada] = useState(false);
@@ -19,7 +19,7 @@ function App() {
   const finalDelChatRef = useRef(null);
   const audioRef = useRef(null);
 
-  // Manejador del Enter
+  // Manejador del Enter (para que se pueda hacer Shift+Enter para nueva línea y Enter para enviar)
   const manejarTecla = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault(); 
@@ -34,7 +34,7 @@ function App() {
     }
   }, [historial, entrevistaIniciada]);
 
-  // Función para callar al Míster a la fuerza
+  // Mutear la respuesta de audio y video si el usuario decide cortar la respuesta
   const saltearRespuesta = () => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -46,7 +46,7 @@ function App() {
     }
   };
 
-  // NUEVA FUNCIÓN: Para resetear todo y volver a elegir área
+  // Permito resetear todo y volver a elegir el área
   const reiniciarEntrevista = () => {
     saltearRespuesta();
     setHistorial([]);
@@ -70,7 +70,7 @@ function App() {
       const respuesta = await axios.post('http://localhost:8000/entrevista', {
         mensaje: mensaje,
         dificultad: dificultad,
-        area: area, // LE MANDAMOS EL ÁREA AL BACKEND
+        area: area, // Mando el área seleccionada al backend
         historial: historial 
       });
 
@@ -103,7 +103,7 @@ function App() {
 
     } catch (error) {
       console.error("Error al comunicarse con el bot:", error);
-      setHistorial([...nuevoHistorial, { rol: 'bot', texto: 'Se cortó la conexión, fiera. Revisá el backend.' }]);
+      setHistorial([...nuevoHistorial, { rol: 'bot', texto: 'Se cortó la conexión. Revisá el backend.' }]);
     } finally {
       setCargando(false); 
     }
@@ -113,7 +113,7 @@ function App() {
     <div className="contenedor-chat">
       <h1>Simulador de Entrevistas</h1>
 
-      {/* PANTALLA 1: CONFIGURACIÓN INICIAL (Si la entrevista NO inició) */}
+      {/*Configuración inicial (Si la entrevista no arrancó) */}
       {!entrevistaIniciada ? (
         <div style={{ 
           backgroundColor: '#222', 
@@ -123,7 +123,7 @@ function App() {
           border: '1px solid #444',
           marginTop: '20px'
         }}>
-          <h2 style={{ color: '#00f0ff', marginBottom: '20px' }}>Prepará tu examen</h2>
+          <h2 style={{ color: '#00f0ff', marginBottom: '20px' }}>Prepará tu entrevista</h2>
           
           {/* Selector de Nivel */}
           <div style={{ marginBottom: '20px' }}>
@@ -163,13 +163,13 @@ function App() {
         </div>
       ) : (
         
-        /* PANTALLA 2: EL SIMULADOR DE CHAT (Si la entrevista YA inició) */
+        /* Simulador de chat (si la entrevista ya inició) */
         <>
           <div style={{ textAlign: 'center', marginBottom: '15px', color: '#aaa' }}>
             <p>Evaluación de <strong>{area}</strong> - Nivel <strong>{dificultad}</strong></p>
           </div>
 
-          {/* AVATAR DEL MÍSTER */}
+          {/* El avatar del Indio */}
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
             <div style={{
                 width: '200px', 
@@ -197,7 +197,7 @@ function App() {
             </div>
           </div>
 
-          {/* CAJA DE HISTORIAL */}
+          {/* Caja de historial */}
           <div className="caja-mensajes">
             {historial.length === 0 && (
               <div className="mensaje bot">
@@ -221,7 +221,7 @@ function App() {
             )}
           </div>
 
-          {/* FORMULARIO Y BOTONERA */}
+          {/* Formulario y botonera */}
           <form onSubmit={enviarMensaje} className="formulario" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <textarea
               value={mensaje}
@@ -244,7 +244,7 @@ function App() {
             
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between' }}>
               
-              {/* Si terminó, mostramos el botón de volver al menú. Si no, mostramos el de cortar audio */}
+              {/* Si terminó, muestro el botón de volver al menú. Si no, el de cortar audio */}
               {entrevistaTerminada ? (
                 <button 
                   type="button" 

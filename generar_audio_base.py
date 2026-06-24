@@ -11,6 +11,5 @@ async def generar_audio_masculino():
     comunicador = edge_tts.Communicate(texto_base, voz_argentina)
     await comunicador.save(archivo_salida)
 
-# Ejecutamos la magia
 if __name__ == "__main__":
     asyncio.run(generar_audio_masculino())

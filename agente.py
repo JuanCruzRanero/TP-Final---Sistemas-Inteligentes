@@ -8,20 +8,28 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# 1. Definimos la Memoria (El Estado del Grafo)
+# Defino la memoria (el estado del grafo)
 class EstadoEntrevista(TypedDict):
     mensajes: Annotated[list, add_messages] 
     nivel_dificultad: str
-    area: str  # <--- Agregamos el área a la memoria
+    area: str  
     es_ultimo_turno: bool  
 
-# 2. Inicializamos el cerebro
+# Inicializo el cerebro
 llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0.5)
 
-# 3. Creamos el Nodo (El Entrevistador)
+# Creo el nodo entrevistador
 def nodo_entrevistador(state: EstadoEntrevista):
     
     area_elegida = state.get("area", "Redes Informáticas")
+    archivo_memoria = "memoria_entrevistas.txt"
+    
+    # Leer progreso de sesiones anteriores
+    if os.path.exists(archivo_memoria):
+        with open(archivo_memoria, "r", encoding="utf-8") as f:
+            historial_largo_plazo = f.read()
+    else:
+        historial_largo_plazo = "No hay registros de entrevistas previas. Esta es la primera sesión del candidato."
     
     if state.get("es_ultimo_turno", False): 
         instrucciones = f"""Sos un entrevistador técnico. LA ENTREVISTA HA FINALIZADO POR TIEMPO.
@@ -34,7 +42,7 @@ def nodo_entrevistador(state: EstadoEntrevista):
         4. PROHIBICIÓN ABSOLUTA: Tienes terminantemente prohibido usar signos de interrogación (?) en tu respuesta. No le preguntes al candidato qué opina de la nota, ni le ofrezcas continuar. Esto es un monólogo final de cierre.
         """
     else:        
-        # Armamos la regla de dificultad
+        # Reglas de dificultad
         if state['nivel_dificultad'] == "Senior":
             regla_dificultad = "EXIGENCIA SENIOR: Planteá escenarios complejos de arquitectura, problemas en producción, optimización profunda y cuellos de botella. PROHIBIDO hacer preguntas teóricas básicas de manual."
         elif state['nivel_dificultad'] == "Semi-Senior":
@@ -44,10 +52,16 @@ def nodo_entrevistador(state: EstadoEntrevista):
         else:
             regla_dificultad = "EXIGENCIA TRAINEE: Evaluá conceptos teóricos fundamentales, definiciones básicas y estructuras elementales de esta tecnología."
 
-        # Inyectamos el ÁREA y la DIFICULTAD en la cabeza del bot
+        # Meto área, dificultad e historial en las instrucciones base
         instrucciones = f"""Sos un entrevistador técnico experimentado y súper estricto. 
         Hoy te toca evaluar a un candidato EXCLUSIVAMENTE para el área de: {area_elegida}.
         
+        HISTORIAL DE EXÁMENES PASADOS DEL CANDIDATO:
+        {historial_largo_plazo}
+        
+        REGLA DE EVOLUCIÓN (AVANCES ENTRE SESIONES):
+        Analizá el historial de exámenes pasados. Si ves que el candidato cometió errores graves en un tema anteriormente, volvé a indagar sutilmente sobre ese concepto en esta sesión para evaluar si estudió y progresó. No repitas exactamente las mismas preguntas de las sesiones anteriores.
+
         ENFOQUE TEMÁTICO:
         - Si el área es "Redes", enfócate en el modelo OSI, TCP/IP, ruteo, DNS, etc.
         - Si el área es "Base de Datos", enfócate en SQL, normalización, índices, NoSQL, transacciones, etc.
@@ -68,13 +82,21 @@ def nodo_entrevistador(state: EstadoEntrevista):
     mensajes_para_llm = [SystemMessage(content=instrucciones)] + state["mensajes"]
     respuesta = llm.invoke(mensajes_para_llm)
     
+    # Si es el último turno, guardo la devolución del examinador en el archivo de memoria
+    if state.get("es_ultimo_turno", False):
+        with open(archivo_memoria, "a", encoding="utf-8") as f:
+            f.write(f"\n=========================================\n")
+            f.write(f"ÁREA EVALUADA: {area_elegida} | NIVEL: {state['nivel_dificultad']}\n")
+            f.write(f"DEVOLUCIÓN DEL EXAMINADOR:\n{respuesta.content}\n")
+            f.write(f"=========================================\n")
+            
     return {"mensajes": [respuesta]}
 
-# 4. Construimos el Grafo (El flujo de trabajo)
+# Construyo el grafo (el flujo de trabajo)
 grafo = StateGraph(EstadoEntrevista)
 grafo.add_node("entrevistador", nodo_entrevistador)
 grafo.add_edge(START, "entrevistador")
 grafo.add_edge("entrevistador", END)
 
-# Compilamos el simulador para poder usarlo desde afuera
+# Compilo el simulador para poder usarlo desde afuera
 simulador = grafo.compile()
