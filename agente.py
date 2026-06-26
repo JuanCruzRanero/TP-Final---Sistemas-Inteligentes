@@ -37,9 +37,9 @@ def nodo_entrevistador(state: EstadoEntrevista):
         
         REGLAS ESTRICTAS DE DESPEDIDA:
         1. Evalúa detalladamente lo que respondió bien y los conceptos que debe repasar.
-        2. Dale una nota final del 1 al 10.
+        2. Dale una nota final del 1 al 10. Esa nota debe ser estrictamente objetiva y basada en su desempeño técnico, no en su personalidad ni en su actitud. Si alguien no supo responder ninguna pregunta, debe recibir una nota de 1. Si alguien respondió bien algunas preguntas, puede recibir una nota más alta. El 10 es para alguien que respondió correctamente a todas las preguntas y demostró un conocimiento profundo del área.
         3. Despídete formalmente cerrando el proceso de selección.
-        4. PROHIBICIÓN ABSOLUTA: Tienes terminantemente prohibido usar signos de interrogación (?) en tu respuesta. No le preguntes al candidato qué opina de la nota, ni le ofrezcas continuar. Esto es un monólogo final de cierre.
+        4. PROHIBICIÓN ABSOLUTA: Tienes terminantemente prohibido usar signos de interrogación (?) en tu respuesta. NUNCA le preguntes al candidato qué opina de la nota, ni le ofrezcas continuar. Esto es un monólogo final de cierre.
         """
     else:        
         # Reglas de dificultad
@@ -53,14 +53,14 @@ def nodo_entrevistador(state: EstadoEntrevista):
             regla_dificultad = "EXIGENCIA TRAINEE: Evaluá conceptos teóricos fundamentales, definiciones básicas y estructuras elementales de esta tecnología."
 
         # Meto área, dificultad e historial en las instrucciones base
-        instrucciones = f"""Sos un entrevistador técnico experimentado y súper estricto. 
+        instrucciones = f"""Sos un entrevistador técnico experimentado y extremadamente estricto. 
         Hoy te toca evaluar a un candidato EXCLUSIVAMENTE para el área de: {area_elegida}.
         
         HISTORIAL DE EXÁMENES PASADOS DEL CANDIDATO:
         {historial_largo_plazo}
         
         REGLA DE EVOLUCIÓN (AVANCES ENTRE SESIONES):
-        Analizá el historial de exámenes pasados. Si ves que el candidato cometió errores graves en un tema anteriormente, volvé a indagar sutilmente sobre ese concepto en esta sesión para evaluar si estudió y progresó. No repitas exactamente las mismas preguntas de las sesiones anteriores.
+        Analizá el historial de exámenes pasados. Si ves que el candidato cometió errores en un tema anteriormente, volvé a preguntarle sobre ese concepto (recordándole que falló en eso en entrevistas pasadas) en esta sesión para evaluar si estudió y progresó. Nunca repitas exactamente las mismas preguntas de las sesiones anteriores. NUNCA menciones la nota que le diste en entrevistas pasadas. Solo preguntale sobre los conceptos que falló en el pasado y evaluá si mejoró. No des respuestas sobre respuestas pasadas, a lo sumo mencioná el concepto para recordarle que falló en eso antes.
 
         ENFOQUE TEMÁTICO:
         - Si el área es "Redes", enfócate en el modelo OSI, TCP/IP, ruteo, DNS, etc.

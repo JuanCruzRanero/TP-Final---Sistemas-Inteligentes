@@ -1,3 +1,7 @@
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -42,6 +46,7 @@ h1 {
   gap: 15px;
   padding: 10px;
   margin-bottom: 20px;
+  min-height: 0;
 }
 
 .mensaje {
@@ -76,6 +81,7 @@ h1 {
 .formulario {
   display: flex;
   gap: 10px;
+  padding-bottom: 5px;
 }
 
 input {

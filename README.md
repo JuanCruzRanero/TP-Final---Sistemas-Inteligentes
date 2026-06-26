@@ -17,7 +17,7 @@ git clone link_del_repo
 
 cd carpetaDelProyecto
 
-3. Crear un archivo .env y pegar la API_KEY (privada por cuestiones de seguridad)
+3. Crear un archivo .env en la carpeta principal del proyectp y pegar lo indicado por correo (la API_KEY)
 
 4. Configurar el Backend (Python)
 - En una terminal nueva (Terminal 1, de ahora en más), crear y activar el entorno virtual, y luego instalar las dependencias. Todo esto debe hacerse con los siguientes comandos:

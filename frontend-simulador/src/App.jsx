@@ -77,7 +77,7 @@ function App() {
       const textoBot = respuesta.data.respuesta;
       setHistorial([...nuevoHistorial, { rol: 'bot', texto: textoBot }]);
 
-      if (textoBot.includes('/10') || textoBot.toLowerCase().includes('nota final')) {
+      if (respuesta.data.entrevista_terminada === true) {
         setEntrevistaTerminada(true);
       }
 

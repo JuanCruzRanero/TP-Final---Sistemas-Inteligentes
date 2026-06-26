@@ -67,5 +67,6 @@ def charlar_con_agente(datos: MensajeUsuario):
     return {
         "dificultad_evaluada": datos.dificultad,
         "respuesta": respuesta_bot,
-        "audio": audio_base64
+        "audio": audio_base64,
+        "entrevista_terminada": llegamos_al_limite
     }
